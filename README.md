@@ -54,6 +54,37 @@ uvicorn app.main:app --reload --port 8000
 
 Do not commit `.env`. If it is already tracked: `git rm --cached .env`.
 
+Locally `docker compose up -d` starts only Postgres. The API container is the `app` profile (see Deploy).
+
+## Deploy
+
+One VPS with Docker is enough. The API image includes the PWA and runs migrations on start.
+
+On the server:
+
+```bash
+git clone git@github.com:sk-u-ki/household-inventory.git
+cd household-inventory
+cp .env.example .env
+# set POSTGRES_PASSWORD
+# set LIDL_REFRESH_TOKEN (or copy the token file into the server)
+docker compose --profile app up -d --build
+```
+
+Then open `http://SERVER_IP:8000/app/`.
+
+Install-to-home-screen on a phone needs HTTPS. Put Caddy (or nginx) in front:
+
+```caddy
+your.domain {
+    reverse_proxy 127.0.0.1:8000
+}
+```
+
+After a code change: `git pull && docker compose --profile app up -d --build`.
+
+Postgres is bound to `127.0.0.1` only. Do not publish `5432` to the internet. The Lidl token lives in `.env` on the server, not in git.
+
 ## PWA
 
 Four tabs:
@@ -80,7 +111,7 @@ Token lookup order:
 curl -X POST http://127.0.0.1:8000/adapters/lidl/sync
 ```
 
-Only new `ticket.id` values are imported. Already stored receipts are skipped (`store + external_receipt_id`). The first sync may pull the full history.
+Only new `ticket.id` values from the last 6 months are imported. Older Lidl tickets have no HTML receipt and are skipped. Already stored receipts are skipped (`store + external_receipt_id`).
 
 If the token is expired you get 502/503. Refresh the token file and retry.
 

@@ -8,8 +8,11 @@ const titles = {
 const view = document.getElementById("view");
 const title = document.getElementById("title");
 const subtitle = document.getElementById("subtitle");
+const syncButton = document.getElementById("sync");
+const syncStatus = document.getElementById("sync-status");
 let tab = "inventory";
 let products = [];
+let syncing = false;
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -330,12 +333,60 @@ async function render() {
   }
 }
 
+function showSyncStatus(text, ok = false) {
+  syncStatus.className = ok ? "ok" : "error";
+  syncStatus.textContent = text;
+}
+
+async function syncReceipts() {
+  if (syncing) return;
+  syncing = true;
+  syncButton.disabled = true;
+  syncButton.textContent = "Обновляю…";
+  showSyncStatus("Спрашиваю магазины…", true);
+  try {
+    const adapters = (await api("/adapters")).filter((item) => item.has_live_source);
+    if (!adapters.length) {
+      throw new Error("Нет магазина с живым клиентом");
+    }
+    let imported = 0;
+    let skipped = 0;
+    let failed = 0;
+    const errors = [];
+    for (const adapter of adapters) {
+      showSyncStatus(`${adapter.display_name}: забираю чеки…`, true);
+      const result = await api(`/adapters/${adapter.key}/sync`, { method: "POST" });
+      imported += result.imported;
+      skipped += result.skipped;
+      failed += result.failed;
+      errors.push(...(result.errors || []));
+    }
+    const parts = [`новых ${imported}`, `уже было ${skipped}`];
+    if (failed) parts.push(`ошибок ${failed}`);
+    showSyncStatus(parts.join(" · "), !failed);
+    if (errors.length) {
+      showSyncStatus(`${parts.join(" · ")}. ${errors[0]}`, false);
+    }
+    await render();
+  } catch (error) {
+    showSyncStatus(error.message);
+  } finally {
+    syncing = false;
+    syncButton.disabled = false;
+    syncButton.textContent = "Обновить чеки";
+  }
+}
+
 document.querySelectorAll(".tabs button").forEach((button) => {
   button.addEventListener("click", () => {
     tab = button.dataset.tab;
     document.querySelectorAll(".tabs button").forEach((item) => item.classList.toggle("active", item === button));
     render();
   });
+});
+
+syncButton.addEventListener("click", () => {
+  syncReceipts();
 });
 
 if ("serviceWorker" in navigator) {

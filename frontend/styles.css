@@ -35,6 +35,21 @@ header {
 header h1 { margin: 0; font-size: 1.25rem; }
 header p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
 
+.header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.header-action {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
 main { padding: 0 16px 16px; }
 
 .card {

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.adapters.base import NormalizedReceipt, StoreAdapter
+from app.adapters.lidl import LidlEmptyReceipt
 from app.adapters.lidl_client import LidlClientError, LidlNotConfigured
 from app.models import Receipt, Store
 from app.schemas.receipt import ReceiptCreate, ReceiptLineCreate, ReceiptRead
@@ -80,6 +81,8 @@ def sync_adapter(db: Session, adapter: StoreAdapter) -> dict:
                 skipped += 1
                 continue
             errors.append(f"{summary.external_receipt_id}: {exc.detail}")
+        except LidlEmptyReceipt:
+            skipped += 1
         except (ValueError, NotImplementedError, LidlClientError) as exc:
             errors.append(f"{summary.external_receipt_id}: {exc}")
 
