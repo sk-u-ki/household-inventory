@@ -52,9 +52,25 @@ async function loadProducts() {
 }
 
 function setReviewCount(count) {
-  const n = Number(count) || 0;
+  const n = Math.max(0, Number(count) || 0);
   reviewCount.textContent = String(n);
   reviewCount.classList.toggle("hidden", n === 0);
+}
+
+function dismissCard(card) {
+  const height = card.getBoundingClientRect().height;
+  card.style.height = `${height}px`;
+  card.offsetHeight;
+  card.classList.add("leaving");
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      card.remove();
+      if (!view.querySelector(".card")) {
+        view.innerHTML = `<p class="empty">Очередь проверки пуста.</p>`;
+      }
+      resolve();
+    }, 300);
+  });
 }
 
 async function refreshReviewCount() {
@@ -110,6 +126,8 @@ async function renderReview() {
           <button class="secondary" data-mode="existing">Есть в каталоге</button>
           <button class="secondary" data-mode="create">Создать продукт</button>
         </div>
+        <button class="ghost" data-ignore type="button">Пропустить</button>
+        <div class="error" data-ignore-error></div>
         <form class="hidden" data-form="existing">
           <label>Продукт</label>
           <select name="product_id">${productOptions()}</select>
@@ -155,6 +173,24 @@ async function renderReview() {
       </article>`;
     })
     .join("");
+
+  view.querySelectorAll("[data-ignore]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const card = button.closest(".card");
+      if (card.classList.contains("leaving")) return;
+      const msg = card.querySelector("[data-ignore-error]");
+      button.disabled = true;
+      try {
+        await api(`/receipt-lines/${card.dataset.line}/skip`, { method: "POST" });
+        const left = Math.max(0, (Number(reviewCount.textContent) || 1) - 1);
+        setReviewCount(left);
+        await dismissCard(card);
+      } catch (error) {
+        button.disabled = false;
+        setMessage(msg, error.message);
+      }
+    });
+  });
 
   view.querySelectorAll("[data-mode]").forEach((button) => {
     button.addEventListener("click", () => {
