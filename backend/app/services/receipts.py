@@ -116,6 +116,7 @@ def import_receipt(db: Session, payload: ReceiptCreate) -> ReceiptRead:
         currency=receipt.currency,
         mapped_count=sum(1 for line in lines if line.status == "mapped"),
         unmapped_count=sum(1 for line in lines if line.status == "unmapped"),
+        ignored_count=sum(1 for line in lines if line.status == "ignored"),
         lines=[_line_read(line, store) for line in lines],
     )
 
@@ -195,6 +196,8 @@ def _load_unmapped_line(db: Session, line_id: int) -> tuple[ReceiptLine, Store]:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Receipt line not found")
     if line.status == "mapped":
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Receipt line is already mapped")
+    if line.status == "ignored":
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Receipt line is ignored")
 
     receipt = db.get(Receipt, line.receipt_id)
     if receipt is None:
@@ -259,6 +262,25 @@ def map_existing_product(
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
     return _bind_product(db, line, store, product, package_quantity, package_unit)
+
+
+def skip_receipt_line(db: Session, line_id: int) -> ReceiptLineRead:
+    """Hide this SKU from the current review queue only. A later receipt can ask again."""
+    line, store = _load_unmapped_line(db, line_id)
+    siblings = db.scalars(
+        select(ReceiptLine)
+        .join(Receipt, Receipt.id == ReceiptLine.receipt_id)
+        .where(
+            Receipt.store_id == store.id,
+            ReceiptLine.external_product_id == line.external_product_id,
+            ReceiptLine.status == "unmapped",
+        )
+    ).all()
+    for sibling in siblings:
+        sibling.status = "ignored"
+    db.commit()
+    db.refresh(line)
+    return _line_read(line, store)
 
 
 def create_product_and_map(

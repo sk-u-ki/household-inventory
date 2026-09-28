@@ -38,7 +38,7 @@ class ReceiptLineRead(BaseModel):
     package_count: Decimal
     unit_price: Decimal
     line_total: Decimal
-    status: Literal["unmapped", "mapped"]
+    status: Literal["unmapped", "mapped", "ignored"]
     purchase_id: int | None
     occurrence_count: int = 1
     total_package_count: Decimal | None = None
@@ -54,6 +54,7 @@ class ReceiptRead(BaseModel):
     currency: str
     mapped_count: int
     unmapped_count: int
+    ignored_count: int = 0
     lines: list[ReceiptLineRead]
 
 

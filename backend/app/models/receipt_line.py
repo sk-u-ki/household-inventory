@@ -11,7 +11,7 @@ from app.db import Base
 
 class ReceiptLine(Base):
     __tablename__ = "receipt_lines"
-    __table_args__ = (CheckConstraint("status IN ('unmapped', 'mapped')", name="ck_receipt_lines_status"),)
+    __table_args__ = (CheckConstraint("status IN ('unmapped', 'mapped', 'ignored')", name="ck_receipt_lines_status"),)
 
     id: Mapped[int] = mapped_column(BigInteger, Identity(), primary_key=True)
     receipt_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("receipts.id"), nullable=False)

@@ -11,7 +11,13 @@ from app.schemas.receipt import (
     ReceiptLineRead,
     ReceiptRead,
 )
-from app.services.receipts import create_product_and_map, import_receipt, list_receipt_lines, map_existing_product
+from app.services.receipts import (
+    create_product_and_map,
+    skip_receipt_line,
+    import_receipt,
+    list_receipt_lines,
+    map_existing_product,
+)
 
 receipts_router = APIRouter(prefix="/receipts", tags=["receipts"])
 receipt_lines_router = APIRouter(prefix="/receipt-lines", tags=["receipt-lines"])
@@ -43,6 +49,11 @@ def resolve_existing_product(
         payload.package_quantity,
         payload.package_unit,
     )
+
+
+@receipt_lines_router.post("/{line_id}/skip", response_model=ReceiptLineRead)
+def skip_unmapped_line(line_id: int, db: Session = Depends(get_db)) -> ReceiptLineRead:
+    return skip_receipt_line(db, line_id)
 
 
 @receipt_lines_router.post("/{line_id}/create-and-resolve", response_model=ReceiptLineRead, status_code=status.HTTP_201_CREATED)

@@ -58,6 +58,24 @@ main { padding: 0 16px 16px; }
   border-radius: 16px;
   padding: 14px;
   margin-bottom: 10px;
+  overflow: hidden;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    height 0.3s ease,
+    margin 0.3s ease,
+    padding 0.3s ease,
+    border-width 0.3s ease;
+}
+
+.card.leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  height: 0 !important;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
 }
 
 .row {
@@ -94,6 +112,12 @@ button {
 }
 
 button.secondary { background: var(--brand-soft); color: var(--brand); }
+button.ghost {
+  margin-top: 8px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px dashed var(--line);
+}
 button:disabled { opacity: 0.55; }
 
 .tabs {
