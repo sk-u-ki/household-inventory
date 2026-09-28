@@ -6,6 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
+from app.api.adapters import router as adapters_router
 from app.api.inventory import router as inventory_router
 from app.api.products import router as products_router
 from app.api.purchases import router as purchases_router
@@ -19,6 +20,7 @@ FRONTEND_DIR = ROOT_DIR / "frontend"
 app = FastAPI(title="Household Inventory", version="0.1.0")
 app.include_router(products_router)
 app.include_router(stores_router)
+app.include_router(adapters_router)
 app.include_router(purchases_router)
 app.include_router(receipts_router)
 app.include_router(receipt_lines_router)

@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
 
+    lidl_language: str = "pl"
+    lidl_country: str = "PL"
+    lidl_refresh_token: str = ""
+    lidl_refresh_token_file: str = ""
+
     @property
     def database_url(self) -> str:
         return (
