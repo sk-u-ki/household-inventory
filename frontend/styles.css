@@ -118,6 +118,22 @@ button:disabled { opacity: 0.55; }
 
 .tabs button.active { color: var(--brand); }
 
+.tab-count {
+  display: inline-block;
+  min-width: 1.25rem;
+  margin-left: 2px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--warn);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.35;
+  vertical-align: middle;
+}
+
+.tab-count.hidden { display: none; }
+
 .hidden { display: none; }
 .empty { color: var(--muted); padding: 24px 8px; text-align: center; }
 .error { color: var(--danger); font-size: 0.9rem; margin-top: 8px; }

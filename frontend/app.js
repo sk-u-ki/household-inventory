@@ -10,6 +10,7 @@ const title = document.getElementById("title");
 const subtitle = document.getElementById("subtitle");
 const syncButton = document.getElementById("sync");
 const syncStatus = document.getElementById("sync-status");
+const reviewCount = document.getElementById("review-count");
 let tab = "inventory";
 let products = [];
 let syncing = false;
@@ -50,6 +51,22 @@ async function loadProducts() {
   products = await api("/products");
 }
 
+function setReviewCount(count) {
+  const n = Number(count) || 0;
+  reviewCount.textContent = String(n);
+  reviewCount.classList.toggle("hidden", n === 0);
+}
+
+async function refreshReviewCount() {
+  try {
+    const lines = await api("/receipt-lines");
+    setReviewCount(lines.length);
+    return lines.length;
+  } catch {
+    return null;
+  }
+}
+
 async function renderInventory() {
   const items = await api("/inventory");
   if (!items.length) {
@@ -74,6 +91,7 @@ async function renderInventory() {
 
 async function renderReview() {
   const [lines] = await Promise.all([api("/receipt-lines"), loadProducts()]);
+  setReviewCount(lines.length);
   if (!lines.length) {
     view.innerHTML = `<p class="empty">Очередь проверки пуста.</p>`;
     return;
@@ -328,6 +346,7 @@ async function render() {
     if (tab === "review") await renderReview();
     if (tab === "catalog") await renderCatalog();
     if (tab === "in") await renderIn();
+    if (tab !== "review") await refreshReviewCount();
   } catch (error) {
     view.innerHTML = `<p class="error">${error.message}</p>`;
   }
