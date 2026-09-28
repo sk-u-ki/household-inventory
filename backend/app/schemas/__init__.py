@@ -1,6 +1,6 @@
 from app.schemas.adapter import AdapterImportResult, AdapterRead, AdapterSyncResult
 from app.schemas.inventory import InventoryItem
-from app.schemas.product import ProductCreate, ProductRead
+from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.schemas.purchase import PurchaseCreate, PurchaseRead
 from app.schemas.receipt import (
     ReceiptCreate,
@@ -18,6 +18,7 @@ __all__ = [
     "InventoryItem",
     "ProductCreate",
     "ProductRead",
+    "ProductUpdate",
     "PurchaseCreate",
     "PurchaseRead",
     "ReceiptCreate",

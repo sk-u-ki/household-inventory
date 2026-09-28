@@ -252,11 +252,34 @@ async function renderCatalog() {
   const list = products.length
     ? products
         .map(
-          (p) => `<article class="card">
+          (p) => `<article class="card" data-product="${p.id}">
             <div class="row">
-              <div class="name">${p.name}</div>
-              <div class="meta">${p.base_unit} · мин. ${qty(p.minimum_stock, p.base_unit)}</div>
+              <div>
+                <div class="name">${p.name}</div>
+                <div class="meta">${p.base_unit} · мин. ${qty(p.minimum_stock, p.base_unit)}</div>
+              </div>
+              <button class="secondary header-action" data-edit type="button">Изменить</button>
             </div>
+            <form class="hidden" data-edit-form>
+              <label>Название</label>
+              <input name="name" required value="${p.name.replaceAll('"', "&quot;")}" />
+              <div class="grid-2">
+                <div>
+                  <label>Единица</label>
+                  <select name="base_unit">
+                    <option value="g" ${p.base_unit === "g" ? "selected" : ""}>g</option>
+                    <option value="ml" ${p.base_unit === "ml" ? "selected" : ""}>ml</option>
+                    <option value="pcs" ${p.base_unit === "pcs" ? "selected" : ""}>pcs</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Минимум</label>
+                  <input name="minimum_stock" type="number" min="0" step="0.001" value="${p.minimum_stock}" />
+                </div>
+              </div>
+              <button type="submit">Сохранить</button>
+              <div class="error"></div>
+            </form>
           </article>`
         )
         .join("")
@@ -286,6 +309,34 @@ async function renderCatalog() {
         <div class="error"></div>
       </form>
     </article>`;
+
+  view.querySelectorAll("[data-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const form = button.closest(".card").querySelector("[data-edit-form]");
+      form.classList.toggle("hidden");
+    });
+  });
+
+  view.querySelectorAll("[data-edit-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const productId = form.closest(".card").dataset.product;
+      const msg = form.querySelector(".error");
+      try {
+        await api(`/products/${productId}`, {
+          method: "PATCH",
+          body: JSON.stringify({
+            name: form.name.value,
+            base_unit: form.base_unit.value,
+            minimum_stock: Number(form.minimum_stock.value || 0),
+          }),
+        });
+        await render();
+      } catch (error) {
+        setMessage(msg, error.message);
+      }
+    });
+  });
 
   document.getElementById("product-form").addEventListener("submit", async (event) => {
     event.preventDefault();
