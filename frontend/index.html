@@ -13,8 +13,14 @@
   </head>
   <body>
     <header>
-      <h1 id="title">Склад</h1>
-      <p id="subtitle">Остатки считаются из покупок</p>
+      <div class="header-row">
+        <div>
+          <h1 id="title">Склад</h1>
+          <p id="subtitle">Остатки считаются из покупок</p>
+        </div>
+        <button id="sync" class="secondary header-action" type="button">Обновить чеки</button>
+      </div>
+      <p id="sync-status" class="hidden"></p>
     </header>
     <main id="view"></main>
     <nav class="tabs">
