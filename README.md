@@ -1,43 +1,43 @@
-# Домашний склад
+# Household inventory
 
-Личный учёт продуктов и закупок. Чек из магазина превращается в приход, склад считается как сумма покупок минус сумма списаний. Неизвестные товары из чека не угадываются — их разбирает человек.
+Personal stock and grocery tracking. A store receipt becomes a stock-in. On-hand quantity is `SUM(purchases) − SUM(consumptions)`. Unknown receipt SKUs are never guessed — a person maps them.
 
-Единицы только `g` / `ml` / `pcs`. FIFO, партии и сроки годности не ведутся.
+Units are `g` / `ml` / `pcs` only. No FIFO, batches, or expiry dates.
 
-## Как устроено
+## How it works
 
-- **Product** — наш продукт, который можно заменять (`Куриное филе`). Не SKU магазина.
-- **Store + ProductMapping** — SKU магазина привязан к Product. Упаковка переводится в базовую единицу: `package_count × package_quantity`.
-- **Purchase** — приход на склад (из чека или вручную).
-- **Consumption** — расход. Остаток = `SUM(purchases) − SUM(consumptions)`.
-- **Receipt line** со статусом `unmapped` — товар из чека, которого ещё нет в маппинге. После привязки такие же SKU применяются сами.
+- **Product** — an internal interchangeable item (`Chicken breast`). Not a store SKU.
+- **Store + ProductMapping** — a store SKU is bound to a Product. Packs convert to the base unit: `package_count × package_quantity`.
+- **Purchase** — stock in (from a receipt or entered by hand).
+- **Consumption** — stock out. On-hand = `SUM(purchases) − SUM(consumptions)`.
+- **Receipt line** with status `unmapped` — a receipt item with no mapping yet. After you map it, the same SKU applies automatically.
 
-Магазин подключается адаптером: он приводит свой чек к общему виду. Ядро импорта Lidl не знает.
+A store is an adapter: it turns a shop-specific receipt into one canonical shape. The import core does not know about Lidl.
 
 ```
-магазин (Lidl, …)
+store (Lidl, …)
     → adapter.normalize()
     → POST /receipts
-    → mapping? Purchase : очередь проверки
+    → mapping? Purchase : review queue
 ```
 
-## Состав
+## Layout
 
 ```
-frontend/                 PWA (склад, проверка, каталог, приход)
+frontend/                 PWA (stock, review, catalog, stock-in)
 backend/                  FastAPI + SQLAlchemy + Alembic
 docker-compose.yml        Postgres 17
 .env.example
 ```
 
-PWA отдаётся бэкендом с того же origin: `/` → `/app/`.
+The backend serves the PWA from the same origin: `/` → `/app/`.
 
-## Запуск
+## Run
 
-Нужны Docker, Python 3.10+, venv.
+You need Docker, Python 3.10+, and a venv.
 
 ```bash
-cp .env.example .env          # задай POSTGRES_PASSWORD
+cp .env.example .env          # set POSTGRES_PASSWORD
 docker compose up -d
 
 cd backend
@@ -48,43 +48,43 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-- приложение: http://127.0.0.1:8000/app/
+- app: http://127.0.0.1:8000/app/
 - docs: http://127.0.0.1:8000/docs
 - health: http://127.0.0.1:8000/health
 
-`.env` в git не коммитить. Если файл уже tracked: `git rm --cached .env`.
+Do not commit `.env`. If it is already tracked: `git rm --cached .env`.
 
 ## PWA
 
-Четыре вкладки:
+Four tabs:
 
-| Вкладка   | Что делает                                      |
-|-----------|--------------------------------------------------|
-| Склад     | остатки, ниже минимума подсвечены                |
-| Проверка  | неизвестные SKU: привязать или создать продукт   |
-| Продукты  | внутренний каталог                               |
-| Приход    | ручное пополнение                                |
+| Tab        | What it does                                              |
+|------------|-----------------------------------------------------------|
+| Склад      | on-hand stock; below-minimum rows are highlighted         |
+| Проверка   | unknown SKUs: map to a product or create one              |
+| Продукты   | internal catalog                                          |
+| Приход     | manual stock-in                                           |
 
-На телефоне открой тот же URL и «Добавить на экран Домой». Кэшируется только оболочка, не API.
+On a phone, open the same URL and use “Add to Home Screen”. Only the app shell is cached, not the API.
 
-## Чеки Lidl
+## Lidl receipts
 
-Адаптер `lidl` ходит в Lidl Plus по refresh token. Браузерный логин в этот репозиторий не входит.
+The `lidl` adapter talks to Lidl Plus with a refresh token. Browser login is not part of this repo.
 
-Токен (по порядку):
+Token lookup order:
 
-1. `LIDL_REFRESH_TOKEN` в `.env`
-2. иначе файл `~/.config/lidl-plus/refresh_token`
+1. `LIDL_REFRESH_TOKEN` in `.env`
+2. otherwise `~/.config/lidl-plus/refresh_token`
 
 ```bash
 curl -X POST http://127.0.0.1:8000/adapters/lidl/sync
 ```
 
-Забираются только новые `ticket.id`. Уже импортированные пропускаются (`store + external_receipt_id`). Первый sync может подтянуть всю историю.
+Only new `ticket.id` values are imported. Already stored receipts are skipped (`store + external_receipt_id`). The first sync may pull the full history.
 
-Если токен протух — 502/503. Обнови файл токена и повтори.
+If the token is expired you get 502/503. Refresh the token file and retry.
 
-Сырой чек без клиента:
+Raw receipt without the live client:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/adapters/lidl/import \
@@ -92,34 +92,34 @@ curl -X POST http://127.0.0.1:8000/adapters/lidl/import \
   --data-binary @ticket.json
 ```
 
-## Другой магазин
+## Another store
 
-1. Класс `StoreAdapter` в `backend/app/adapters/` (`key`, `display_name`, `normalize`).
-2. По желанию `list_summaries` / `fetch_raw` для живого опроса.
-3. `register(...)` в `backend/app/adapters/__init__.py`.
+1. Add a `StoreAdapter` under `backend/app/adapters/` (`key`, `display_name`, `normalize`).
+2. Optionally implement `list_summaries` / `fetch_raw` for live polling.
+3. `register(...)` in `backend/app/adapters/__init__.py`.
 
-Дальше тот же импорт и та же вкладка «Проверка». Маппинги разделены по магазину: одно и то же молоко в Lidl и в другом магазине — разные SKU.
+Import and the review tab stay the same. Mappings are per store: the same milk at Lidl and at another shop are different SKUs.
 
-## API (коротко)
+## API (short)
 
-| Метод | Путь | Зачем |
-|-------|------|--------|
-| GET | `/inventory` | остатки |
-| GET/POST | `/products` | каталог |
-| GET/POST | `/purchases` | приходы |
-| POST | `/receipts` | канонический чек |
-| GET | `/receipt-lines?status=unmapped` | очередь проверки |
-| POST | `/receipt-lines/{id}/resolve` | привязать к существующему продукту |
-| POST | `/receipt-lines/{id}/create-and-resolve` | создать продукт и привязать |
-| GET | `/adapters` | список магазинов |
-| POST | `/adapters/{key}/sync` | забрать новые чеки |
-| POST | `/adapters/{key}/import` | импорт сырого чека |
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/inventory` | on-hand stock |
+| GET/POST | `/products` | catalog |
+| GET/POST | `/purchases` | stock-in |
+| POST | `/receipts` | canonical receipt |
+| GET | `/receipt-lines?status=unmapped` | review queue |
+| POST | `/receipt-lines/{id}/resolve` | map to an existing product |
+| POST | `/receipt-lines/{id}/create-and-resolve` | create a product and map it |
+| GET | `/adapters` | registered stores |
+| POST | `/adapters/{key}/sync` | pull new receipts |
+| POST | `/adapters/{key}/import` | import a raw receipt |
 
-## Миграции
+## Migrations
 
-Из `backend/`, с активированным venv:
+From `backend/`, with the venv active:
 
 ```bash
 alembic upgrade head
-alembic revision --autogenerate -m "описание"
+alembic revision --autogenerate -m "description"
 ```
