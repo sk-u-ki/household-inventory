@@ -24,6 +24,22 @@ class ProductCreate(BaseModel):
         return name
 
 
+class ProductUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    base_unit: BaseUnit | None = None
+    minimum_stock: Decimal | None = Field(default=None, ge=0)
+
+    @field_validator("name")
+    @classmethod
+    def strip_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        name = value.strip()
+        if not name:
+            raise ValueError("name must not be empty")
+        return name
+
+
 class ProductRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
