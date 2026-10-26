@@ -7,6 +7,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.api.adapters import router as adapters_router
+from app.api.consumptions import router as consumptions_router
 from app.api.inventory import router as inventory_router
 from app.api.products import router as products_router
 from app.api.purchases import router as purchases_router
@@ -22,6 +23,7 @@ app.include_router(products_router)
 app.include_router(stores_router)
 app.include_router(adapters_router)
 app.include_router(purchases_router)
+app.include_router(consumptions_router)
 app.include_router(receipts_router)
 app.include_router(receipt_lines_router)
 app.include_router(inventory_router)

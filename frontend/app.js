@@ -1,5 +1,5 @@
 const titles = {
-  inventory: ["Склад", "Остатки считаются из покупок"],
+  inventory: ["Склад", "Остатки: приход минус списание"],
   review: ["Проверка", "Неизвестные товары из чеков"],
   catalog: ["Продукты", "Внутренний каталог"],
   in: ["Приход", "Ручное пополнение склада"],
@@ -91,8 +91,10 @@ async function renderInventory() {
   }
   view.innerHTML = items
     .map((item) => {
-      const low = Number(item.quantity) < Number(item.minimum_stock);
-      return `<article class="card ${low ? "low" : ""}">
+      const amount = Number(item.quantity);
+      const low = amount < Number(item.minimum_stock);
+      const empty = amount <= 0;
+      return `<article class="card ${low ? "low" : ""}" data-product="${item.product_id}" data-unit="${item.unit}">
         <div class="row">
           <div>
             <div class="name">${item.name}</div>
@@ -100,9 +102,70 @@ async function renderInventory() {
           </div>
           <div class="qty">${qty(item.quantity, item.unit)}</div>
         </div>
+        <div class="actions">
+          <button class="secondary" data-writeoff type="button" ${empty ? "disabled" : ""}>Списать</button>
+          <button class="warn" data-zero type="button" ${empty ? "disabled" : ""}>В ноль</button>
+        </div>
+        <form class="hidden" data-writeoff-form>
+          <label>Сколько списать</label>
+          <input name="quantity" type="number" min="0.001" max="${item.quantity}" step="0.001" required />
+          <button type="submit">Списать ${item.unit}</button>
+          <div class="error"></div>
+        </form>
+        <div class="error" data-zero-error></div>
       </article>`;
     })
     .join("");
+
+  view.querySelectorAll("[data-writeoff]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const form = button.closest(".card").querySelector("[data-writeoff-form]");
+      form.classList.toggle("hidden");
+      if (!form.classList.contains("hidden")) form.quantity.focus();
+    });
+  });
+
+  view.querySelectorAll("[data-writeoff-form]").forEach((form) => {
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const card = form.closest(".card");
+      const msg = form.querySelector(".error");
+      const submit = form.querySelector("button[type=submit]");
+      submit.disabled = true;
+      try {
+        await api("/consumptions", {
+          method: "POST",
+          body: JSON.stringify({
+            product_id: Number(card.dataset.product),
+            quantity: Number(form.quantity.value),
+            unit: card.dataset.unit,
+          }),
+        });
+        await render();
+      } catch (error) {
+        submit.disabled = false;
+        setMessage(msg, error.message);
+      }
+    });
+  });
+
+  view.querySelectorAll("[data-zero]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const card = button.closest(".card");
+      const msg = card.querySelector("[data-zero-error]");
+      button.disabled = true;
+      try {
+        await api("/consumptions/zero", {
+          method: "POST",
+          body: JSON.stringify({ product_id: Number(card.dataset.product) }),
+        });
+        await render();
+      } catch (error) {
+        button.disabled = false;
+        setMessage(msg, error.message);
+      }
+    });
+  });
 }
 
 async function renderReview() {
