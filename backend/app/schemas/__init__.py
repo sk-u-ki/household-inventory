@@ -1,4 +1,5 @@
 from app.schemas.adapter import AdapterImportResult, AdapterRead, AdapterSyncResult
+from app.schemas.consumption import ConsumptionCreate, ConsumptionRead, ConsumptionZero
 from app.schemas.inventory import InventoryItem
 from app.schemas.product import ProductCreate, ProductRead, ProductUpdate
 from app.schemas.purchase import PurchaseCreate, PurchaseRead
@@ -15,6 +16,9 @@ __all__ = [
     "AdapterImportResult",
     "AdapterRead",
     "AdapterSyncResult",
+    "ConsumptionCreate",
+    "ConsumptionRead",
+    "ConsumptionZero",
     "InventoryItem",
     "ProductCreate",
     "ProductRead",

@@ -99,6 +99,7 @@ input, select, textarea, button {
   border: 1px solid var(--line);
   padding: 10px 12px;
   background: #fff;
+  scroll-margin-bottom: 96px;
 }
 
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -112,6 +113,16 @@ button {
 }
 
 button.secondary { background: var(--brand-soft); color: var(--brand); }
+button.warn { background: var(--warn-bg); color: var(--warn); }
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions button { padding: 8px 10px; }
 button.ghost {
   margin-top: 8px;
   background: transparent;
@@ -161,6 +172,7 @@ button:disabled { opacity: 0.55; }
 .hidden { display: none; }
 .empty { color: var(--muted); padding: 24px 8px; text-align: center; }
 .error { color: var(--danger); font-size: 0.9rem; margin-top: 8px; }
+.error:empty { display: none; }
 .ok { color: var(--brand); font-size: 0.9rem; margin-top: 8px; }
 .badge {
   display: inline-block;
